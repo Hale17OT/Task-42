@@ -137,24 +137,26 @@ async function fetchActivityCandidates(userId, includeOwn = true) {
     }));
 }
 
-async function fetchCourseUpdateCandidates() {
+async function fetchCourseUpdateCandidates(userId) {
   const [rows] = await pool.query(
     `
       SELECT o.id, o.order_status, o.updated_at, o.created_at, c.title
       FROM orders o
       JOIN courses_services c ON c.id = o.course_service_id
+      WHERE o.user_id = ?
       ORDER BY o.updated_at DESC
       LIMIT 200
-    `
+    `,
+    [userId]
   );
 
   return rows.map((row) => ({
     type: "course_update",
     id: row.id,
-      author: "system",
-      authorUserId: null,
+    author: "system",
+    authorUserId: null,
     title: row.title,
-    summary: `Order status update: ${row.order_status}`,
+    summary: `Course status: ${row.order_status}`,
     tags: ["course", "service"],
     publishedAt: row.updated_at || row.created_at,
     similarityKey: similarityKeyForCourseUpdate(row),
@@ -217,7 +219,7 @@ async function getPersonalizedFeed({ userId, limit = 20 }) {
 
   const [activityCandidates, courseCandidates, newsCandidates] = await Promise.all([
     preferences.include_training_updates ? fetchActivityCandidates(userId, true) : Promise.resolve([]),
-    preferences.include_course_updates ? fetchCourseUpdateCandidates() : Promise.resolve([]),
+    preferences.include_course_updates ? fetchCourseUpdateCandidates(userId) : Promise.resolve([]),
     preferences.include_news ? fetchNewsCandidates(userId) : Promise.resolve([])
   ]);
 

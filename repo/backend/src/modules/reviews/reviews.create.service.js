@@ -25,10 +25,11 @@ async function persistDimensionScores(connection, reviewId, dimensionScores) {
 
 async function createReview({ userId, payload, requestId }) {
   await ensureUserNotBlacklisted(userId);
-  await enforceDailyPublishCap(userId);
   await checkSensitiveWords(payload.reviewText);
 
   const reviewId = await withTransaction(pool, async (connection) => {
+    await enforceDailyPublishCap(userId, connection);
+
     const [orderRows] = await connection.query(
       `
         SELECT id, order_status

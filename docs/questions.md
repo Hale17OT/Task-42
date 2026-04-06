@@ -4,7 +4,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Subscribers vs regular users and role matrix
+## 1 Subscribers vs regular users and role matrix
 
 **Question:** The prompt opens with “athletes, subscribers, coaches, and operations staff” but authentication and RBAC name “Regular User” alongside Admin, Coach, and Support Agent. It is unclear whether “subscriber” is a billing/subscription state on the same account type, a separate role, or synonymous with “Regular User.”
 
@@ -14,7 +14,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Feed “similar items” and 7-day de-duplication
+## 2 Feed “similar items” and 7-day de-duplication
 
 **Question:** The feed must de-duplicate “similar items” seen in the last 7 days, but the prompt does not define similarity (same URL, same source + title, embedding, fuzzy title, tags, etc.).
 
@@ -24,7 +24,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Cold-start recommendations (first week)
+## 3 Cold-start recommendations (first week)
 
 **Question:** Cold-start behavior is described as “based on selected sports and first-week browsing” without weights, fallback when browsing is empty, or whether recommendations mix with non-recommendation items.
 
@@ -34,7 +34,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Block author, block tag, and “Not Interested” persistence
+## 4 Block author, block tag, and “Not Interested” persistence
 
 **Question:** Scope and reversibility are not specified: per-user only, whether blocks affect all surfaces (feed only vs reviews vs messages), and whether users can unblock or manage lists.
 
@@ -44,7 +44,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Activity records: validation and optional fields
+## 5 Activity records: validation and optional fields
 
 **Question:** Running/cycling/walking records list many metrics (duration, distance, calories, HR, pace, etc.) without required vs optional rules, unit constraints beyond miles, or validation when GPX is attached (derive distance vs user-entered).
 
@@ -54,7 +54,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## GPX “simple coordinate list” display
+## 6 GPX “simple coordinate list” display
 
 **Question:** No detail on max points, simplification, elevation, or privacy (show full path vs sampled).
 
@@ -64,7 +64,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Reviews: one per order vs follow-up within 30 days
+## 7 Reviews: one per order vs follow-up within 30 days
 
 **Question:** Anti-fake rules say “one review per order” but users may “add one follow-up review within 30 days.” It is ambiguous whether the follow-up amends the same review entity, a second row linked to the first, or counts toward “max 2 reviews per day per user.”
 
@@ -74,7 +74,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Review dimensions: scoring rules
+## 8 Review dimensions: scoring rules
 
 **Question:** Configurable dimensions (e.g. punctuality) do not state whether each dimension is mandatory, 1–5 only, or aggregated into the headline 1–5 rating.
 
@@ -84,7 +84,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Anonymous vs real-name display and coach replies
+## 9 Anonymous vs real-name display and coach replies
 
 **Question:** Unclear whether anonymous reviews show handle to staff internally, and whether threading exposes identity to coaches.
 
@@ -94,7 +94,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Appeals (7 days) and arbitration lifecycle
+## 10 Appeals (7 days) and arbitration lifecycle
 
 **Question:** “Arbitration timeline and status messages” lacks states, who acts (Support vs Admin), final outcomes (uphold, overturn, partial), and whether the original review stays visible during arbitration.
 
@@ -104,7 +104,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Sensitive words, image deny list, and enforcement
+## 11 Sensitive words, image deny list, and enforcement
 
 **Question:** Dictionary behavior (reject vs mask vs queue), image hash list update process, and whether appeals bypass automated blocks are unspecified.
 
@@ -114,7 +114,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## High-risk users (3 upheld violations) and 30-day review blacklist
+## 12 High-risk users (3 upheld violations) and 30-day review blacklist
 
 **Question:** “Upheld violations” scope (appeals only vs any sanction), whether blacklist is global, and interaction with orders already placed are not defined.
 
@@ -124,7 +124,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Device fingerprint and multi-account risk flag
+## 13 Device fingerprint and multi-account risk flag
 
 **Question:** How fingerprint is generated in a privacy-sensitive, offline context, and false-positive handling are not specified.
 
@@ -134,7 +134,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Offline ledger: WeChat Pay import format and signatures
+## 14 Offline ledger: WeChat Pay import format and signatures
 
 **Question:** Batch reconciliation file format, signature algorithm, and public key storage are not in the prompt.
 
@@ -144,7 +144,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Partial refunds, $0.01 granularity, and order consistency
+## 15 Partial refunds, $0.01 granularity, and order consistency
 
 **Question:** Interaction between auto-cancel (30 minutes unpaid) and late-arriving payment imports, and rounding rules for partial refunds, are underspecified.
 
@@ -154,7 +154,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## News ingestion: duplicates, allow/block, and failure retries
+## 16 News ingestion: duplicates, allow/block, and failure retries
 
 **Question:** Whether duplicate articles across RSS and HTML extracts merge, and how allow/block interacts with already-stored items, are not stated.
 
@@ -164,7 +164,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## Analytics CSV export and PII
+## 17 Analytics CSV export and PII
 
 **Question:** “Access logging” depth and whether exports include personal data are not specified.
 
@@ -174,7 +174,7 @@ Record of questions raised while interpreting the TrailForge Sports Training & C
 
 ---
 
-## “Operations staff” vs system roles
+## 18 “Operations staff” vs system roles
 
 **Question:** Whether all back-office users are Admins or a subset is read-only analytics is unclear.
 

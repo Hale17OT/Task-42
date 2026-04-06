@@ -88,7 +88,8 @@ async function getReviewDetail({ reviewId, requester }) {
     timeline = timelineRows;
   }
 
-  const canAppealNow = requester && requester.id === review.user_id && canAppeal(review.published_at) && (!appeal || appeal.appeal_status === "resolved");
+  const hasOpenAppeal = appeal && (appeal.appeal_status === "submitted" || appeal.appeal_status === "under_review");
+  const canAppealNow = requester && requester.id === review.user_id && canAppeal(review.published_at) && !hasOpenAppeal;
 
   return {
     id: review.id,
@@ -161,6 +162,7 @@ async function listUserReviews(userId) {
     const images = hidden ? [] : imagesByReview.get(row.id) || [];
     return {
       ...row,
+      review_text: hidden ? "Content hidden during arbitration" : row.review_text,
       image_count: images.length,
       image_previews: images.slice(0, 3),
       followup: hidden ? null : followupByReview.get(row.id) || null

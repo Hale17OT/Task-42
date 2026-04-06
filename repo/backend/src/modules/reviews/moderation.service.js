@@ -29,7 +29,9 @@ async function checkSensitiveWords(text) {
   const matched = rows.map((row) => row.word).filter((word) => normalized.includes(String(word).toLowerCase()));
 
   if (matched.length) {
-    throw new ApiError(400, "SENSITIVE_WORD_DETECTED", "Content contains restricted words", { matched });
+    // Do not expose any match details to the client — aids moderation evasion.
+    // The error code SENSITIVE_WORD_DETECTED is sufficient for client handling.
+    throw new ApiError(400, "SENSITIVE_WORD_DETECTED", "Content contains restricted words");
   }
 }
 
@@ -65,30 +67,38 @@ async function ensureImageHashAllowed(hash) {
   }
 }
 
-async function enforceDailyPublishCap(userId) {
-  const [reviewRows] = await pool.query(
+const DAILY_REVIEW_CAP = 2;
+
+async function enforceDailyPublishCap(userId, connection) {
+  if (!connection) {
+    throw new Error("enforceDailyPublishCap requires a transactional connection");
+  }
+
+  // Atomic increment-and-check: the UNIQUE KEY (user_id, quota_date) guarantees
+  // that concurrent transactions serialize on the same row via the implicit
+  // exclusive lock from INSERT ... ON DUPLICATE KEY UPDATE.
+  const [result] = await connection.query(
     `
-      SELECT COUNT(*) AS total
-      FROM reviews
-      WHERE user_id = ?
-        AND published_at IS NOT NULL
-        AND DATE(published_at) = CURRENT_DATE
+      INSERT INTO daily_review_quota (user_id, quota_date, used_count)
+      VALUES (?, CURRENT_DATE, 1)
+      ON DUPLICATE KEY UPDATE used_count = used_count + 1
     `,
     [userId]
   );
 
-  const [followupRows] = await pool.query(
+  // After the upsert, read back the authoritative count under the row lock.
+  const [rows] = await connection.query(
     `
-      SELECT COUNT(*) AS total
-      FROM review_followups
-      WHERE user_id = ?
-        AND DATE(created_at) = CURRENT_DATE
+      SELECT used_count
+      FROM daily_review_quota
+      WHERE user_id = ? AND quota_date = CURRENT_DATE
     `,
     [userId]
   );
 
-  const total = Number(reviewRows[0].total || 0) + Number(followupRows[0].total || 0);
-  if (total >= 2) {
+  const currentCount = Number(rows[0]?.used_count || 0);
+  if (currentCount > DAILY_REVIEW_CAP) {
+    // Roll back the increment by throwing — the caller's transaction will rollback.
     throw new ApiError(429, "DAILY_REVIEW_LIMIT", "User can publish at most 2 review items per day");
   }
 }

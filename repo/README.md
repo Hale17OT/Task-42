@@ -241,9 +241,11 @@ FAILED=<number>
 
 ### Coverage notes
 
-- API tests cover normal and abnormal scenarios, including 400/401/403/404/409 paths where applicable.
-- API tests include pre/post validation for state-changing follow APIs.
-- If some business domains are not present in this repository (for example dedicated hiring/inventory modules), `API_tests` summary prints explicit `TODO_GAP` markers.
+- API tests cover 401 (unauthenticated) for all protected route groups: follows, reviews, feed, refunds, admin ingestion, admin analytics, admin governance, and staff reviews.
+- API tests cover 403 (forbidden) for role-restricted routes: refunds (user), ingestion (user/coach/support), analytics (user/coach), governance (user/support), and staff reviews (user).
+- API tests cover 400 (validation) for registration, follows params, review creation, and staff reply creation.
+- API tests cover 404 for unknown routes.
+- Authenticated tests require the backend to be running with seeded data (see Quick Demo Credentials).
 
 ## Project Layout
 

@@ -4,3 +4,6 @@ dist/
 *.log
 coverage/
 backend/uploads/
+.env.example
+.tmp/
+.claude/

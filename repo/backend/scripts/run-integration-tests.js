@@ -33,7 +33,7 @@ async function run() {
     process.exit(1);
   }
 
-  const result = spawnSync(process.execPath, [vitestBin, "run", "tests/refund-persistence.integration.test.js"], {
+  const result = spawnSync(process.execPath, [vitestBin, "run", "tests/*.integration.test.js"], {
     stdio: "inherit",
     env: {
       ...process.env,

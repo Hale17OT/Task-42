@@ -8,6 +8,17 @@ const { enqueueJob } = require("../queue/queue.service");
 const { parseContentByType, dedupeKeyForItem, normalizeText } = require("./ingestion.logic");
 const { writeAuditEvent } = require("../../services/audit-log");
 
+async function screenSensitiveWords(item) {
+  const textToCheck = [item.title || "", item.summary || "", item.bodyText || ""]
+    .join(" ")
+    .toLowerCase();
+
+  const [rows] = await pool.query("SELECT word FROM sensitive_words WHERE is_active = 1");
+  return rows
+    .map((row) => row.word)
+    .filter((word) => textToCheck.includes(String(word).toLowerCase()));
+}
+
 function ensureIngestionDir() {
   const dir = path.resolve(env.INGESTION_DROP_DIR);
   if (!fs.existsSync(dir)) {
@@ -256,6 +267,19 @@ async function handleIngestionProcessFileJob({ sourceId, filePath }) {
       continue;
     }
 
+    // Screen content against sensitive words before publishing
+    const sensitiveMatches = await screenSensitiveWords(item);
+    const ingestionStatus = sensitiveMatches.length ? "quarantined" : "published";
+
+    if (sensitiveMatches.length) {
+      await logIngestionEvent({
+        sourceId,
+        logType: "moderation_flag",
+        logMessage: "Content quarantined: sensitive words detected",
+        payload: { contentHash, matchCount: sensitiveMatches.length, filePath }
+      });
+    }
+
     const tagList = Array.isArray(item.tags) ? item.tags : [];
     await pool.query(
       `
@@ -272,7 +296,7 @@ async function handleIngestionProcessFileJob({ sourceId, filePath }) {
           ingestion_status,
           raw_payload_path
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         sourceId,
@@ -284,6 +308,7 @@ async function handleIngestionProcessFileJob({ sourceId, filePath }) {
         item.bodyText || item.summary || "",
         item.publishedAt ? new Date(item.publishedAt) : new Date(),
         contentHash,
+        ingestionStatus,
         filePath
       ]
     );
@@ -291,11 +316,12 @@ async function handleIngestionProcessFileJob({ sourceId, filePath }) {
     await logIngestionEvent({
       sourceId,
       logType: "stored",
-      logMessage: "Stored normalized item",
+      logMessage: sensitiveMatches.length ? "Stored quarantined item" : "Stored normalized item",
       payload: {
         title: item.title,
         contentHash,
-        authorName: normalizeText(item.authorName || "Unknown")
+        authorName: normalizeText(item.authorName || "Unknown"),
+        ingestionStatus
       }
     });
   }

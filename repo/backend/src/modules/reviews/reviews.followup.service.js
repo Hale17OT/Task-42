@@ -6,10 +6,11 @@ const { withTransaction, writeReviewAudit } = require("./reviews.shared");
 
 async function addFollowup({ userId, reviewId, followupText, requestId }) {
   await ensureUserNotBlacklisted(userId);
-  await enforceDailyPublishCap(userId);
   await checkSensitiveWords(followupText);
 
   const followupId = await withTransaction(pool, async (connection) => {
+    await enforceDailyPublishCap(userId, connection);
+
     const [reviewRows] = await connection.query("SELECT * FROM reviews WHERE id = ? AND user_id = ? LIMIT 1 FOR UPDATE", [reviewId, userId]);
     if (!reviewRows.length) {
       throw new ApiError(404, "REVIEW_NOT_FOUND", "Review not found for user");

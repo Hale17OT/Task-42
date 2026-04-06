@@ -59,6 +59,9 @@ describe("Ingestion process job", () => {
       if (sql.includes("SELECT id FROM ingested_content_items")) {
         return [[]];
       }
+      if (sql.includes("SELECT word FROM sensitive_words")) {
+        return [[]];
+      }
       if (sql.includes("INSERT INTO ingested_content_items")) {
         contentInsertSpy();
         return [{}];
