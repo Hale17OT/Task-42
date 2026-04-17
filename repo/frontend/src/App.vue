@@ -83,8 +83,16 @@ import { useSession } from "./session";
 import { logout } from "./api";
 import { useToast } from "./toast";
 import ToastList from "./components/ToastList.vue";
-import { clearOfflineIntents, getOfflineIntentCount } from "./offline/mutation-intents";
+import { clearOfflineIntents, getOfflineIntentCount, replayOfflineIntents } from "./offline/mutation-intents";
 import { clearPrivateClientState } from "./offline/private-data";
+import {
+  sendFeedAction,
+  followUser,
+  unfollowUser,
+  updateFeedPreferences,
+  addReviewFollowup,
+  createAppeal
+} from "./api";
 
 const router = useRouter();
 const session = useSession();
@@ -123,14 +131,60 @@ function clearPendingOfflineIntents() {
   refreshOfflineIntentCount();
 }
 
+async function replayIntent(intent) {
+  if (!intent || !intent.action) {
+    return;
+  }
+  const ctx = intent.context || {};
+  switch (intent.action) {
+    case "feed_action":
+      // ctx.payload holds the full API payload recorded at failure time.
+      await sendFeedAction(ctx.payload || ctx);
+      return;
+    case "feed_preferences_update":
+      if (ctx.payload) {
+        await updateFeedPreferences(ctx.payload);
+      }
+      return;
+    case "follow_user":
+      await followUser(ctx.userId);
+      return;
+    case "unfollow_user":
+      await unfollowUser(ctx.userId);
+      return;
+    case "review_followup":
+      if (ctx.reviewId && ctx.followupText) {
+        await addReviewFollowup(ctx.reviewId, { followupText: ctx.followupText });
+      }
+      return;
+    case "review_appeal":
+      if (ctx.reviewId) {
+        await createAppeal(ctx.reviewId, {
+          reason: ctx.reason || "Requesting arbitration review from frontend"
+        });
+      }
+      return;
+    default:
+      // Unknown intent — drop silently rather than infinite-loop.
+      return;
+  }
+}
+
 onMounted(async () => {
   await session.bootstrapSession();
   refreshOfflineIntentCount();
   if (typeof window !== "undefined") {
-    window.addEventListener("online", () => {
+    window.addEventListener("online", async () => {
       online.value = true;
-      refreshOfflineIntentCount();
       toast.pushToast("Back online", "success");
+      try {
+        const result = await replayOfflineIntents(replayIntent);
+        if (result.succeeded > 0) {
+          toast.pushToast(`Replayed ${result.succeeded} offline action${result.succeeded > 1 ? "s" : ""}`, "success");
+        }
+      } catch {
+      }
+      refreshOfflineIntentCount();
     });
     window.addEventListener("offline", () => {
       online.value = false;

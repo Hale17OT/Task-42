@@ -7,3 +7,6 @@ backend/uploads/
 .env.example
 .tmp/
 .claude/
+ingestion_drop/*
+!ingestion_drop/.gitkeep
+!ingestion_drop/README.md

@@ -109,11 +109,8 @@ async function handleAction(payload) {
       items.value = snapshot;
     }
     if (isLikelyOfflineError(err)) {
-      recordOfflineIntent("feed_action", {
-        action: payload.action,
-        itemType: payload.itemType,
-        localItemKey: payload.localItemKey
-      });
+      // Record the full API payload so replay can resend it verbatim.
+      recordOfflineIntent("feed_action", { payload });
       pushToast(buildOfflineRetryMessage("Feed action"), "error");
     } else {
       pushToast(err.message || "Action failed", "error");
@@ -138,7 +135,7 @@ async function savePreferences(payload) {
       preferences.value = optimistic;
       saveFeedPreferencesSnapshot(currentUserId.value, optimistic);
       showingCachedPreferences.value = true;
-      recordOfflineIntent("feed_preferences_update");
+      recordOfflineIntent("feed_preferences_update", { payload });
       pushToast(buildOfflineRetryMessage("Preferences update"), "error");
     } else {
       pushToast(err.message || "Failed to save preferences", "error");
@@ -172,7 +169,8 @@ async function handleToggleFollow({ authorUserId, authorName, currentlyFollowed 
   } catch (err) {
     followedAuthorIds.value = previous;
     if (isLikelyOfflineError(err)) {
-      recordOfflineIntent("follow_toggle", { authorUserId });
+      // Record the exact intent that failed so replay can resume it.
+      recordOfflineIntent(currentlyFollowed ? "unfollow_user" : "follow_user", { userId: authorUserId });
       pushToast(buildOfflineRetryMessage("Follow update"), "error");
     } else {
       pushToast(err.message || "Failed to update follow", "error");

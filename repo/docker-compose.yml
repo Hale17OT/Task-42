@@ -50,6 +50,11 @@ services:
     command: ["sh", "-c", "npm run migrate:up && npm run seed && npm run start"]
     volumes:
       - uploads_data:/app/uploads
+      # Host bind mount: operators drop ingestion files into ./ingestion_drop
+      # on the host and both backend and worker containers pick them up
+      # from /app/ingestion_drop. Override with the INGESTION_DROP_HOST_DIR
+      # env var to point at a different host path.
+      - ${INGESTION_DROP_HOST_DIR:-./ingestion_drop}:/app/ingestion_drop
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 10s
@@ -84,6 +89,8 @@ services:
     command: ["npm", "run", "worker"]
     volumes:
       - uploads_data:/app/uploads
+      # Same host bind mount as backend — see comment in backend service above.
+      - ${INGESTION_DROP_HOST_DIR:-./ingestion_drop}:/app/ingestion_drop
 
   frontend:
     build:
@@ -98,6 +105,65 @@ services:
       PORT: ${FRONTEND_PORT:-5173}
     ports:
       - "5173:5173"
+
+  # ----- Test services (opt-in via `test` profile) -----
+  # Not started by `docker compose up`. Invoked by ./run_tests.sh.
+  test-mysql:
+    image: mysql:8.4
+    profiles: ["test"]
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: trailforge
+      MYSQL_USER: trailforge
+      MYSQL_PASSWORD: trailforge
+    tmpfs:
+      - /var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  backend-tests:
+    build:
+      context: ./backend
+    profiles: ["test"]
+    depends_on:
+      test-mysql:
+        condition: service_healthy
+    environment:
+      NODE_ENV: test
+      DB_HOST: test-mysql
+      DB_PORT: 3306
+      DB_NAME: trailforge
+      DB_USER: trailforge
+      DB_PASSWORD: trailforge
+      SESSION_SECRET: test-secret-sufficiently-long-for-env-validation-12345
+      SESSION_TTL_HOURS: 1
+      PROFILE_ENCRYPTION_KEY: trailforge-local-encryption-key
+      WECHAT_RECON_SECRET: trailforge-recon-secret
+      ORDER_AUTO_CANCEL_MINUTES: 30
+      INGESTION_DROP_DIR: /tmp/ingestion_drop
+      INGESTION_SCAN_INTERVAL_MINUTES: 1
+      INGESTION_RATE_LIMIT_PER_MINUTE: 30
+      LOG_LEVEL: warn
+      CORS_ORIGIN: http://localhost:5173
+    command: >
+      sh -c "
+        npm run migrate:up &&
+        npm run seed &&
+        npx vitest run --no-file-parallelism --poolOptions.threads.singleThread
+      "
+
+  frontend-tests:
+    build:
+      context: ./frontend
+    profiles: ["test"]
+    environment:
+      CI: "true"
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
+    command: ["npx", "vitest", "run"]
 
 volumes:
   mysql_data:

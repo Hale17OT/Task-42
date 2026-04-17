@@ -33,13 +33,26 @@ async function run() {
     process.exit(1);
   }
 
-  const result = spawnSync(process.execPath, [vitestBin, "run", "tests/*.integration.test.js"], {
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      RUN_DB_TESTS: "1"
+  // Integration tests share a single MySQL; run files sequentially (no parallelism)
+  // to avoid row-lock deadlocks on shared tables (auth_sessions, device_fingerprints,
+  // daily_review_quota, etc.) during setup/teardown.
+  const result = spawnSync(
+    process.execPath,
+    [
+      vitestBin,
+      "run",
+      "--no-file-parallelism",
+      "--poolOptions.threads.singleThread",
+      "integration.test"
+    ],
+    {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        RUN_DB_TESTS: "1"
+      }
     }
-  });
+  );
 
   if (result.error) {
     throw result.error;

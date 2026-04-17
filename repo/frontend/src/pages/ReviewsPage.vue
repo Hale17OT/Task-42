@@ -219,7 +219,7 @@ async function submitFollowup(reviewId) {
     await loadDetail(reviewId);
   } catch (err) {
     if (isLikelyOfflineError(err)) {
-      recordOfflineIntent("review_followup", { reviewId });
+      recordOfflineIntent("review_followup", { reviewId, followupText: text });
       pushToast(buildOfflineRetryMessage("Review follow-up"), "error");
     } else {
       pushToast(err.message || "Follow-up failed", "error");
@@ -242,15 +242,17 @@ async function appeal(reviewId) {
 
   appealLoadingByReviewId[reviewId] = true;
   try {
-    await createAppeal(reviewId, {
-      reason: "Requesting arbitration review from frontend",
-    });
+    const appealReason = "Requesting arbitration review from frontend";
+    await createAppeal(reviewId, { reason: appealReason });
     pushToast("Appeal submitted", "success");
     await bootstrap();
     await loadDetail(reviewId);
   } catch (err) {
     if (isLikelyOfflineError(err)) {
-      recordOfflineIntent("review_appeal", { reviewId });
+      recordOfflineIntent("review_appeal", {
+        reviewId,
+        reason: "Requesting arbitration review from frontend"
+      });
       pushToast(buildOfflineRetryMessage("Appeal"), "error");
     } else {
       pushToast(err.message || "Appeal failed", "error");
